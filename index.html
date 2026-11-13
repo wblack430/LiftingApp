@@ -201,13 +201,26 @@ input[type="date"].input::-webkit-date-and-time-value { text-align: left; }
 .recents::-webkit-scrollbar { display: none; }
 .recents:empty { display: none; }
 .recents .chip { flex: none; min-height: 42px; max-width: 240px; font-size: 18px; }
-.starts {
-  display: flex; align-items: center; gap: 8px; overflow-x: auto; scrollbar-width: none;
-  margin: 0 calc(var(--pad) * -1) 14px; padding: 0 var(--pad);
+/* Workout picker on the Log tab */
+.starts { margin-bottom: 16px; }
+.start-row {
+  display: flex; align-items: center; justify-content: space-between; gap: 14px;
+  width: 100%; min-height: 74px; margin-top: 10px; padding: 10px 16px;
+  border: 2px solid var(--outline); border-radius: 14px; color: var(--ink); text-align: left;
 }
-.starts::-webkit-scrollbar { display: none; }
-.starts > span { flex: none; color: var(--ink-2); font-size: 15px; }
-.starts .chip { flex: none; min-height: 42px; max-width: 240px; font-size: 18px; }
+.start-row:active { background: var(--pressed); }
+.start-main { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.start-name { font: 600 26px/1.1 var(--num); overflow-wrap: anywhere; }
+.start-count { flex: none; display: flex; flex-direction: column; align-items: center; min-width: 48px; }
+.start-count b { font: 600 32px/1 var(--num); }
+.start-count small { color: var(--ink-2); font-size: 13px; }
+#log-form { margin-top: 14px; }
+/* Exercise rows with move buttons, in the routine editor */
+.item-row { display: flex; align-items: center; gap: 2px; border-bottom: 1px solid var(--rule); }
+.item-row .row { flex: 1 1 0; min-width: 0; border-bottom: 0; }
+.item-row .row-a, .item-row .row-b { min-width: 0; }
+.move { width: 40px; height: 48px; }
+.head-tools { flex: none; display: flex; gap: 2px; }
 .hint { margin-top: 8px; color: var(--ink-2); font-size: 15px; line-height: 1.35; }
 [hidden] + .field-err + [hidden] + .hint { margin-top: 0; }
 .hint:empty { display: none; }
@@ -498,13 +511,14 @@ button.row:focus-visible { outline-offset: -3px; }
         </div>
         <div id="free-log">
           <div id="starts" class="starts"></div>
-          <form id="log-form" novalidate autocomplete="off"></form>
+          <button type="button" id="free-toggle" class="btn btn-block">Log a single exercise</button>
+          <form id="log-form" novalidate autocomplete="off" hidden></form>
         </div>
         <section id="workout" aria-label="Workout in progress" hidden></section>
         <h2 class="sub" id="logged-title">Logged today</h2>
         <div id="logged-list"></div>
       </div>
-      <div class="actionbar">
+      <div class="actionbar" id="log-bar" hidden>
         <button type="submit" form="log-form" id="log-btn" class="btn btn-primary btn-block">Log entry</button>
         <button type="button" id="next-btn" class="btn btn-primary btn-block" hidden><span></span></button>
       </div>
@@ -601,6 +615,8 @@ function sv(tag, attrs, ...kids) {
 
 const ICONS = {
   x: '<path d="M6 6l12 12M18 6 6 18"/>',
+  up: '<path d="M6 14.5l6-6 6 6"/>',
+  down: '<path d="M6 9.5l6 6 6-6"/>',
   check: '<path d="M5 12.5l4.5 4.5L19 7.5" stroke-width="3"/>',
   prev: '<path d="M15 5l-7 7 7 7"/>',
   next: '<path d="M9 5l7 7-7 7"/>',
@@ -717,6 +733,7 @@ const SETTING_DEFAULTS = {
   presets: [60, 90, 120, 180],
   metric: 'volume', period: 'week',
   lastType: 'Strength', lastBackup: 0, askedPersist: false,
+  strengthOnly: true,       // hide running and the other workout types
 };
 const LIMIT = { weight: 5000, sets: 999, reps: 9999, distance: 999, duration: 359999 };
 
@@ -770,7 +787,7 @@ function normTypes(list) {
 function normSettings(s) {
   const out = { ...SETTING_DEFAULTS, presets: SETTING_DEFAULTS.presets.slice() };
   if (!s || typeof s !== 'object') return out;
-  for (const key of ['sound', 'vibrate', 'wake', 'repeat', 'askedPersist']) if (typeof s[key] === 'boolean') out[key] = s[key];
+  for (const key of ['sound', 'vibrate', 'wake', 'repeat', 'askedPersist', 'strengthOnly']) if (typeof s[key] === 'boolean') out[key] = s[key];
   if (Array.isArray(s.presets) && s.presets.length === 4) {
     const p = s.presets.map(n => Math.round(Number(n)));
     if (p.every(n => n >= 5 && n <= 3600)) out.presets = p;
@@ -781,6 +798,11 @@ function normSettings(s) {
   if (Number.isFinite(s.lastBackup)) out.lastBackup = s.lastBackup;
   return out;
 }
+/* One line per finished workout, so each routine can show how many times it has been done. */
+function normWorkout(w) {
+  if (!w || typeof w !== 'object' || !parseYmd(w.date)) return null;
+  return { id: cleanText(w.id, 64) || uid(), routineId: cleanText(w.routineId, 64), name: cleanText(w.name, 60), date: w.date, at: Number.isFinite(w.at) ? w.at : Date.now() };
+}
 function normState(raw) {
   const src = Array.isArray(raw) ? { entries: raw } : (raw && typeof raw === 'object' ? raw : {});
   const ids = new Set();
@@ -789,6 +811,7 @@ function normState(raw) {
     v: 1,
     entries: (Array.isArray(src.entries) ? src.entries : []).map(normEntry).filter(firstOfId),
     routines: (Array.isArray(src.routines) ? src.routines : []).map(normRoutine).filter(firstOfId),
+    workouts: (Array.isArray(src.workouts) ? src.workouts : []).map(normWorkout).filter(firstOfId),
     types: normTypes(src.types),
     settings: normSettings(src.settings),
   };
@@ -814,6 +837,16 @@ function save() {
 }
 
 /* ---------- Reading the log ---------- */
+const strengthName = () => (S.types.find(t => t.name === 'Strength') || S.types.find(t => t.mode === 'reps') || { name: 'Strength' }).name;
+const hasDistance = () => !S.settings.strengthOnly || S.entries.some(e => e.mode === 'dist');
+const timesDone = id => S.workouts.filter(w => w.routineId === id).length;
+const lastDone = id => S.workouts.filter(w => w.routineId === id).map(w => w.date).sort().pop() || '';
+function recordWorkout(routineId, name, date) {
+  const rec = { id: uid(), routineId, name, date, at: Date.now() };
+  S.workouts.push(rec);
+  return rec;
+}
+const dropWorkout = rec => { S.workouts = S.workouts.filter(w => w.id !== rec.id); };
 const volumeOf = e => e.mode === 'reps' && e.weight && e.reps ? e.weight * (e.sets || 1) * e.reps : 0;
 const distOf = e => e.mode === 'dist' && e.distance ? e.distance : 0;
 const newerFirst = (a, b) => b.date.localeCompare(a.date) || b.createdAt - a.createdAt;
@@ -977,8 +1010,8 @@ function fieldError(input, message) {
 function EntryForm(opts) {
   const p = opts.id;
   const changed = () => { if (opts.onChange) opts.onChange(); };
-  let type = S.settings.lastType;
-  let mode = (S.types.find(t => t.name === type) || S.types[0]).mode;
+  let type = S.settings.strengthOnly ? strengthName() : S.settings.lastType;
+  let mode = S.settings.strengthOnly ? 'reps' : (S.types.find(t => t.name === type) || S.types[0]).mode;
 
   const numInput = (suffix, decimal) => h('input', {
     id: `${p}-${suffix}`, class: 'input num-input', type: 'text',
@@ -1054,6 +1087,12 @@ function EntryForm(opts) {
     distBlock.hidden = mode !== 'dist';
     exLabel.textContent = mode === 'dist' ? 'Name (optional)' : 'Exercise';
     exIn.placeholder = mode === 'dist' ? `Defaults to ${type}` : 'Bench press';
+    if (!opts.numbersOnly) {
+      /* Strength only: nothing to choose, so the type and mode controls stay out of the way. An old run still shows them when edited. */
+      const plain = S.settings.strengthOnly && mode === 'reps' && type === strengthName();
+      typeGrid.hidden = plain;
+      modeSwitch.hidden = plain;
+    }
     clearErrors();
     drawHint();
   }
@@ -1160,7 +1199,8 @@ function EntryForm(opts) {
   }
   /* Called when the workout types or the log changed underneath the form. */
   function sync() {
-    if (!S.types.some(t => t.name === type) && !dirty()) { type = S.types[0].name; mode = S.types[0].mode; }
+    if (S.settings.strengthOnly && !dirty()) { type = strengthName(); mode = 'reps'; }
+    else if (!S.types.some(t => t.name === type) && !dirty()) { type = S.types[0].name; mode = S.types[0].mode; }
     drawTypes(); setMode(mode); drawRecents();
   }
   const dirty = () => inputs.some(input => input.value.trim() !== '');
@@ -1182,14 +1222,14 @@ let logDate = today();
 let dateAuto = true;       // true while the Log tab should follow today's date
 const targetText = () => { const n = daysAgo(logDate); return n === 0 ? 'today' : n === 1 ? 'for yesterday' : `for ${fmtDate(logDate)}`; };
 
-function addEntries(list, message) {
+function addEntries(list, message, alsoUndo) {
   S.entries.push(...list);
   save();
   refresh();
   buzz(15);
   askPersist();
   const ids = new Set(list.map(e => e.id));
-  toast(message, { undo: () => { S.entries = S.entries.filter(e => !ids.has(e.id)); save(); refresh(); toast('Removed.'); } });
+  toast(message, { undo: () => { S.entries = S.entries.filter(e => !ids.has(e.id)); if (alsoUndo) alsoUndo(); save(); refresh(); toast('Removed.'); } });
 }
 function removeEntries(ids, message) {
   const gone = new Set(ids);
@@ -1234,6 +1274,7 @@ function editEntry(entry) {
 
 /* ---------- Log tab ---------- */
 const logForm = EntryForm({ id: 'log', recents: true, onChange: queueDraft });
+let freeOpen = false;      // the single-exercise form is tucked away until asked for
 let draftTimer = 0;
 let lastLogAt = 0;
 
@@ -1357,15 +1398,18 @@ function finishWorkout() {
   if (!session) return;
   const before = session;
   const total = before.items.length, done = before.items.filter(isDone).length;
+  const rec = done ? recordWorkout(before.routineId, before.name, before.date) : null;     // counts toward "times done"
+  if (rec) save();
   session = null;
   saveSession();
   if (dateAuto && logDate !== today()) setLogDate(today(), true);
   refresh();
   toast(done === total ? `Finished ${before.name}. ${count(done, 'exercise')} logged.` : `Ended ${before.name}. ${done} of ${total} logged.`,
-    { undo: () => { session = before; saveSession(); refresh(); } });
+    { undo: () => { if (rec) { dropWorkout(rec); save(); } session = before; saveSession(); refresh(); } });
 }
 function expireSession() {
   if (!session || Date.now() - session.startedAt < SESSION_HOURS * 3600000) return;
+  if (session.items.some(isDone)) { recordWorkout(session.routineId, session.name, session.date); save(); }
   session = null;
   saveSession();
   if (dateAuto && logDate !== today()) setLogDate(today(), true);
@@ -1377,18 +1421,31 @@ function renderLogTab() {
   const on = !!session;
   $('#free-log').hidden = on;
   $('#workout').hidden = !on;
-  $('#log-btn').hidden = on;
+  $('#log-form').hidden = !freeOpen;
+  $('#free-toggle').textContent = freeOpen ? 'Close single exercise' : 'Log a single exercise';
+  $('#log-btn').hidden = on || !freeOpen;
   $('#next-btn').hidden = !on;
+  $('#log-bar').hidden = !on && !freeOpen;
   if (on) renderWorkout(); else { renderStarts(); logForm.sync(); }
   renderLogged();
 }
+/* The workout picker: one big button per routine, with how many times it has been done. */
 function renderStarts() {
   fill($('#starts'),
-    h('span', { text: S.routines.length ? 'Start' : 'Workouts' }),
+    h('h2', { class: 'sub sub-first', text: 'Start a workout' }),
     S.routines.length
-      ? S.routines.map(r => h('button', { type: 'button', class: 'chip', 'aria-label': `Start ${r.name}`, onclick: () => startWorkout(r) }, r.name))
-      : [h('button', { type: 'button', class: 'chip', onclick: addStarters }, 'Add starter workouts'),
-         h('button', { type: 'button', class: 'chip', onclick: () => { show('routines'); routineSheet(null); } }, 'Build my own')]);
+      ? S.routines.map(r => {
+          const n = timesDone(r.id), last = lastDone(r.id);
+          return h('button', { type: 'button', class: 'start-row', 'aria-label': `Start ${r.name}. Done ${count(n, 'time')}.`, onclick: () => startWorkout(r) },
+            h('span', { class: 'start-main' },
+              h('span', { class: 'start-name', text: r.name }),
+              h('span', { class: 'row-sub', text: `${count(r.items.length, 'exercise')}${last ? `, last done ${whenText(last)}` : ''}` })),
+            h('span', { class: 'start-count' }, h('b', { text: String(n) }), h('small', { text: 'done' })));
+        })
+      : [h('p', { class: 'muted', text: 'No workouts saved yet.' }),
+         h('div', { class: 'actions actions-tight' },
+           h('button', { type: 'button', class: 'btn btn-primary btn-block', onclick: addStarters }, 'Add starter workouts'),
+           h('button', { type: 'button', class: 'btn btn-block', onclick: () => { show('routines'); routineSheet(null); } }, 'Build my own'))]);
 }
 function renderWorkout() {
   const rows = session.items.map(row => ({ row, entry: (row.entryId && S.entries.find(e => e.id === row.entryId)) || null }));
@@ -1448,7 +1505,7 @@ function logSheet(row) {
   });
 }
 function addStarters() {
-  const type = (S.types.find(t => t.name === 'Strength') || S.types.find(t => t.mode === 'reps') || { name: 'Strength' }).name;
+  const type = strengthName();
   const now = Date.now();
   const fresh = STARTERS.filter(([name]) => !S.routines.some(r => sameName(r.name, name))).map(([name, list], i) => ({
     id: uid(), name, createdAt: now + i, updatedAt: now + i,
@@ -1478,7 +1535,11 @@ function renderRoutines() {
     S.routines.map(r => {
       const running = !!session && session.routineId === r.id;
       return h('section', { class: 'routine' },
-        h('div', { class: 'day-head' }, h('h2', { text: r.name })),
+        h('div', { class: 'day-head' }, h('h2', { text: r.name }),
+          S.routines.length > 1 && h('span', { class: 'head-tools' },
+            h('button', { type: 'button', class: 'icon-btn move', 'aria-label': `Move ${r.name} up`, disabled: S.routines[0] === r, onclick: () => moveRoutine(r, -1) }, icon('up')),
+            h('button', { type: 'button', class: 'icon-btn move', 'aria-label': `Move ${r.name} down`, disabled: S.routines[S.routines.length - 1] === r, onclick: () => moveRoutine(r, 1) }, icon('down')))),
+        h('p', { class: 'muted plan-count', text: timesDone(r.id) ? `Done ${count(timesDone(r.id), 'time')}, last ${whenText(lastDone(r.id))}` : 'Not done yet' }),
         typeGroups(r.items),
         h('div', { class: 'routine-actions' },
           h('button', { type: 'button', class: 'btn btn-primary', onclick: () => (running ? show('log') : startWorkout(r)) }, running ? 'Resume workout' : 'Start workout'),
@@ -1487,12 +1548,19 @@ function renderRoutines() {
     }),
     missing && h('button', { type: 'button', class: 'btn btn-block more', onclick: addStarters }, 'Add starter workouts'));
 }
+function moveRoutine(r, dir) {
+  const i = S.routines.indexOf(r), j = i + dir;
+  if (i < 0 || j < 0 || j >= S.routines.length) return;
+  [S.routines[i], S.routines[j]] = [S.routines[j], S.routines[i]];
+  save(); refresh();
+}
 const lastLogged = new Map();
 function logRoutine(r) {
   const now = Date.now();
   if (now - (lastLogged.get(r.id) || 0) < 1500) return;      // ignore an accidental double tap
   lastLogged.set(r.id, now);
-  addEntries(r.items.map((item, i) => ({ id: uid(), date: logDate, createdAt: now + i, ...clone(item) })), `Logged ${r.name} ${targetText()}.`);
+  const rec = recordWorkout(r.id, r.name, logDate);
+  addEntries(r.items.map((item, i) => ({ id: uid(), date: logDate, createdAt: now + i, ...clone(item) })), `Logged ${r.name} ${targetText()}.`, () => dropWorkout(rec));
 }
 
 /* Create or edit a routine. seed is a list of items to start from. */
@@ -1503,12 +1571,21 @@ function routineSheet(routine, seed) {
   nameIn.addEventListener('input', () => { nameIn.removeAttribute('aria-invalid'); nameIn.closest('.field').querySelector('.field-err').textContent = ''; });
   const itemsBox = h('div');
   const itemsErr = h('p', { class: 'field-err', role: 'alert' });
+  function moveItem(i, dir) {
+    const j = i + dir;
+    if (j < 0 || j >= draft.items.length) return;
+    [draft.items[i], draft.items[j]] = [draft.items[j], draft.items[i]];
+    drawItems();
+  }
   function drawItems() {
     itemsErr.textContent = '';
     itemsBox.replaceChildren(...(draft.items.length
-      ? draft.items.map((item, i) => entryRow(item, () => itemSheet(item,
-          updated => { draft.items[i] = updated; drawItems(); },
-          () => { draft.items.splice(i, 1); drawItems(); })))
+      ? draft.items.map((item, i) => h('div', { class: 'item-row' },
+          entryRow(item, () => itemSheet(item,
+            updated => { draft.items[i] = updated; drawItems(); },
+            () => { draft.items.splice(i, 1); drawItems(); })),
+          h('button', { type: 'button', class: 'icon-btn move', 'aria-label': `Move ${item.exercise} up`, disabled: i === 0, onclick: () => moveItem(i, -1) }, icon('up')),
+          h('button', { type: 'button', class: 'icon-btn move', 'aria-label': `Move ${item.exercise} down`, disabled: i === draft.items.length - 1, onclick: () => moveItem(i, 1) }, icon('down'))))
       : [h('p', { class: 'muted', text: 'No exercises yet.' })]));
   }
   drawItems();
@@ -1607,7 +1684,7 @@ function weekSummary() {
     h('div', { class: 'week-grid' },
       cell(String(sessions), sessions === 1 ? 'session' : 'sessions'),
       cell(compact(vol), 'lb volume'),
-      cell(fmtNum(dist, 1), dist === 1 ? 'mile' : 'miles')));
+      hasDistance() && cell(fmtNum(dist, 1), dist === 1 ? 'mile' : 'miles')));
 }
 function chartFigure() {
   const group = (label, options, current, apply) => h('div', { class: 'seg2', role: 'group', 'aria-label': label },
@@ -1617,7 +1694,7 @@ function chartFigure() {
     }, text)));
   return [
     h('div', { class: 'chart-controls' },
-      group('Measure', [['volume', 'Volume'], ['distance', 'Distance']], S.settings.metric, v => { S.settings.metric = v; }),
+      hasDistance() && group('Measure', [['volume', 'Volume'], ['distance', 'Distance']], S.settings.metric, v => { S.settings.metric = v; }),
       group('Group by', [['day', 'Day'], ['week', 'Week'], ['month', 'Month']], S.settings.period, v => { S.settings.period = v; })),
     h('figure', null,
       h('figcaption', { class: 'chart-head' },
@@ -1656,7 +1733,7 @@ function drawChart() {
   const box = $('#chart-box');
   if (!box) return;
   killChart();
-  const { metric, period } = S.settings;
+  const period = S.settings.period, metric = hasDistance() ? S.settings.metric : 'volume';
   const unit = metric === 'volume' ? 'lb' : 'mi';
   const data = buckets(metric, period);
   const libReady = typeof window.Chart === 'function';
@@ -1743,7 +1820,7 @@ function renderSettings() {
   const st = S.settings;
   const switchRow = (label, key, note) => {
     const row = h('button', { type: 'button', class: 'set-row', role: 'switch', 'aria-checked': String(st[key]),
-      onclick: () => { S.settings[key] = !S.settings[key]; save(); row.setAttribute('aria-checked', String(S.settings[key])); if (key === 'sound' && S.settings.sound) Timer.test(); },
+      onclick: () => { S.settings[key] = !S.settings[key]; save(); row.setAttribute('aria-checked', String(S.settings[key])); if (key === 'sound' && S.settings.sound) Timer.test(); if (key === 'strengthOnly') afterDataChange(); },
     }, h('span', null, label, note && h('small', { text: note })), h('span', { class: 'switch', 'aria-hidden': 'true' }));
     return row;
   };
@@ -1782,10 +1859,11 @@ function renderSettings() {
     h('div', { class: 'actions actions-tight' }, h('button', { type: 'button', class: 'btn btn-block', onclick: () => Timer.test() }, 'Play the alert sound')),
 
     h('h2', { class: 'sub', text: 'Workout types' }),
-    S.types.map(t => h('div', { class: 'set-row' },
+    switchRow('Strength only', 'strengthOnly', 'Turn off to bring back running and other types'),
+    !st.strengthOnly && S.types.map(t => h('div', { class: 'set-row' },
       h('span', null, t.name, h('small', { text: t.mode === 'dist' ? 'Distance and time' : 'Sets and reps' })),
       S.types.length > 1 && h('button', { type: 'button', class: 'btn btn-small', 'aria-label': `Remove ${t.name}`, onclick: () => removeType(t.name) }, 'Remove'))),
-    h('div', { class: 'actions actions-tight' }, h('button', { type: 'button', class: 'btn btn-block', onclick: typeSheet }, 'Add type')),
+    !st.strengthOnly && h('div', { class: 'actions actions-tight' }, h('button', { type: 'button', class: 'btn btn-block', onclick: typeSheet }, 'Add type')),
 
     h('h2', { class: 'sub', text: 'Add to Home Screen' }),
     h('p', { class: 'muted', text: 'iPhone: open this page in Safari, tap Share, then Add to Home Screen. Do this before you start logging, because the Home Screen app keeps its own data, separate from Safari.' }),
@@ -1794,7 +1872,7 @@ function renderSettings() {
 
     h('h2', { class: 'sub', text: 'Delete' }),
     h('button', { type: 'button', class: 'btn btn-block btn-danger', onclick: deleteAllSheet }, 'Delete all data'),
-    h('p', { class: 'muted about', text: 'Workout Log 1.1. Everything stays on this device.' }));
+    h('p', { class: 'muted about', text: 'Workout Log 1.2. Everything stays on this device.' }));
 }
 
 function removeType(name) {
@@ -1833,7 +1911,7 @@ function typeSheet() {
 }
 
 function exportBackup() {
-  const payload = { app: 'workout-log', version: 1, exportedAt: new Date().toISOString(), entries: S.entries, routines: S.routines, types: S.types, settings: S.settings };
+  const payload = { app: 'workout-log', version: 1, exportedAt: new Date().toISOString(), entries: S.entries, routines: S.routines, workouts: S.workouts, types: S.types, settings: S.settings };
   const json = JSON.stringify(payload, null, 2);
   const name = `workout-log-${today()}.json`;
   const done = () => { S.settings.lastBackup = Date.now(); save(); if (active === 'settings') renderSettings(); toast('Backup exported.', { force: true }); };
@@ -1883,7 +1961,8 @@ function applyImport(incoming, replace) {
     session = null; saveSession();
     message = `Imported ${count(S.entries.length, 'entry', 'entries')} and ${count(S.routines.length, 'routine')}.`;
   } else {
-    const have = new Set([...S.entries, ...S.routines].map(x => x.id));
+    const have = new Set([...S.entries, ...S.routines, ...S.workouts].map(x => x.id));
+    S.workouts.push(...incoming.workouts.filter(w => !have.has(w.id)));
     const entries = incoming.entries.filter(e => !have.has(e.id));
     const routines = incoming.routines.filter(r => !have.has(r.id));
     S.entries.push(...entries);
@@ -2235,6 +2314,8 @@ function init() {
     if (dateInput.showPicker && matchMedia('(pointer: fine)').matches) { try { dateInput.showPicker(); } catch (err) { /* already open */ } }
   });
   loadDraft();
+  freeOpen = logForm.dirty();                                          // a half-typed entry reopens its form
+  $('#free-toggle').addEventListener('click', () => { freeOpen = !freeOpen; renderLogTab(); });
   if (session && session.date <= today()) logDate = session.date;      // a workout in progress keeps its day
   $('#next-btn').addEventListener('click', () => {
     const next = session && session.items.find(x => !isDone(x));
@@ -2291,6 +2372,9 @@ function init() {
 }
 init();
 })();
+</script>
+</body>
+</html>;
 </script>
 </body>
 </html>
