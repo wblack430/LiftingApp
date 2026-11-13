@@ -201,19 +201,29 @@ input[type="date"].input::-webkit-date-and-time-value { text-align: left; }
 .recents::-webkit-scrollbar { display: none; }
 .recents:empty { display: none; }
 .recents .chip { flex: none; min-height: 42px; max-width: 240px; font-size: 18px; }
-/* Workout picker on the Log tab */
-.starts { margin-bottom: 16px; }
+/* ---------- Start tab: one big button, then the saved workouts to pick from ---------- */
+.start-home { display: flex; flex-direction: column; }
+.start-mid { flex: 1 0 auto; display: flex; flex-direction: column; justify-content: center; gap: 12px; padding-bottom: 24px; }
+.btn-start { min-height: 132px; border-radius: 18px; font-size: 56px; }
+.start-now { font: 600 34px/1.1 var(--num); overflow-wrap: anywhere; }
+.start-mid .muted { margin: -6px 0 8px; }
+.start-note { margin-bottom: 12px; }
+.start-list { display: grid; gap: 10px; }
 .start-row {
   display: flex; align-items: center; justify-content: space-between; gap: 14px;
-  width: 100%; min-height: 74px; margin-top: 10px; padding: 10px 16px;
+  width: 100%; min-height: 78px; padding: 10px 16px;
   border: 2px solid var(--outline); border-radius: 14px; color: var(--ink); text-align: left;
 }
 .start-row:active { background: var(--pressed); }
 .start-main { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
 .start-name { font: 600 26px/1.1 var(--num); overflow-wrap: anywhere; }
-.start-count { flex: none; display: flex; flex-direction: column; align-items: center; min-width: 48px; }
-.start-count b { font: 600 32px/1 var(--num); }
-.start-count small { color: var(--ink-2); font-size: 13px; }
+.start-count {
+  flex: none; align-self: stretch;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
+  width: 88px; padding-left: 14px; border-left: 1px solid var(--rule);
+}
+.start-count b { font: 600 34px/1 var(--num); font-variant-numeric: tabular-nums; }
+.start-count small { color: var(--ink-2); font-size: 13px; line-height: 1.1; white-space: nowrap; }
 #log-form { margin-top: 14px; }
 /* Exercise rows with move buttons, in the routine editor */
 .item-row { display: flex; align-items: center; gap: 2px; border-bottom: 1px solid var(--rule); }
@@ -472,6 +482,7 @@ button.row:focus-visible { outline-offset: -3px; }
   #tabs button { flex-direction: row; gap: 8px; height: 46px; font-size: 13px; }
   .actionbar { padding: 6px var(--pad) 8px; }
   .actionbar .btn-primary { min-height: 46px; font-size: 22px; }
+  .btn-start { min-height: 84px; font-size: 40px; }
 }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { transition-duration: .01ms !important; animation-duration: .01ms !important; }
@@ -497,7 +508,8 @@ button.row:focus-visible { outline-offset: -3px; }
   </header>
 
   <main id="views">
-    <section id="view-log" class="view" aria-label="Log">
+    <section id="view-start" class="view" aria-label="Start workout"><div class="scroll" id="start-body"></div></section>
+    <section id="view-log" class="view" aria-label="Log" hidden>
       <div class="scroll" id="log-scroll">
         <h1 class="sr-only">Log a workout</h1>
         <div class="date-row">
@@ -510,7 +522,6 @@ button.row:focus-visible { outline-offset: -3px; }
           <button type="button" id="d-next" class="icon-btn" aria-label="Next day"></button>
         </div>
         <div id="free-log">
-          <div id="starts" class="starts"></div>
           <button type="button" id="free-toggle" class="btn btn-block">Log a single exercise</button>
           <form id="log-form" novalidate autocomplete="off" hidden></form>
         </div>
@@ -529,7 +540,8 @@ button.row:focus-visible { outline-offset: -3px; }
   </main>
 
   <nav id="tabs" aria-label="Sections">
-    <button type="button" data-tab="log" aria-current="page"><span>Log</span></button>
+    <button type="button" data-tab="start" aria-current="page"><span>Start</span></button>
+    <button type="button" data-tab="log"><span>Log</span></button>
     <button type="button" data-tab="routines"><span>Routines</span></button>
     <button type="button" data-tab="history"><span>History</span></button>
     <button type="button" data-tab="settings"><span>Settings</span></button>
@@ -568,7 +580,7 @@ button.row:focus-visible { outline-offset: -3px; }
    Workout Log
    One file, no account, no server. Everything is kept in localStorage
    on this device. Sections below: helpers, storage, shared UI pieces,
-   entry form, the four tabs, rest timer, startup.
+   entry form, the five tabs, rest timer, startup.
    ===================================================================== */
 
 /* ---------- Helpers ---------- */
@@ -625,6 +637,7 @@ const ICONS = {
   repeat: '<path d="M17 2l4 4-4 4"/><path d="M3 11v-1a4 4 0 0 1 4-4h14"/><path d="M7 22l-4-4 4-4"/><path d="M21 13v1a4 4 0 0 1-4 4H3"/>',
   pause: '<path d="M8.5 5.5v13M15.5 5.5v13" stroke-width="3.2"/>',
   play: '<path d="M8 5.2v13.6L19 12z" fill="currentColor"/>',
+  start: '<path d="M7.5 4.5v15l12-7.5z"/>',
   log: '<rect x="3.5" y="3.5" width="17" height="17" rx="4"/><path d="M12 8v8M8 12h8"/>',
   routines: '<path d="M9 6h11M9 12h11M9 18h11"/><path d="M4 6h.01M4 12h.01M4 18h.01" stroke-width="3"/>',
   history: '<path d="M5 20v-8M12 20V4M19 20v-5" stroke-width="2.6"/>',
@@ -1217,7 +1230,7 @@ function EntryForm(opts) {
 }
 
 /* ---------- Changing the log ---------- */
-let active = 'log';
+let active = 'start';
 let logDate = today();
 let dateAuto = true;       // true while the Log tab should follow today's date
 const targetText = () => { const n = daysAgo(logDate); return n === 0 ? 'today' : n === 1 ? 'for yesterday' : `for ${fmtDate(logDate)}`; };
@@ -1343,8 +1356,8 @@ function loadDraft() {
 }
 
 /* ---------- Workout in progress ----------
-   Pick a routine before you train. The Log tab then lists its exercises,
-   and each one is checked off as you log it. */
+   Pick a workout on the Start tab before you train. The Log tab then lists
+   its exercises, and each one is checked off as you log it. */
 const SESSION_HOURS = 12;          // a workout left open longer than this closes itself
 const STARTERS = [
   ['Push day', [['Bench press', 4, 6], ['Overhead press', 3, 8], ['Incline dumbbell press', 3, 10], ['Lateral raise', 3, 12], ['Triceps pushdown', 3, 12]]],
@@ -1358,11 +1371,19 @@ const isDone = x => !!x.entryId && S.entries.some(e => e.id === x.entryId);
 function loadSession() {
   try {
     const raw = JSON.parse(storage.get(SESSION_KEY) || 'null');
-    const live = raw && Array.isArray(raw.items) && Date.now() - raw.startedAt < SESSION_HOURS * 3600000;
-    const items = live
+    const items = raw && Array.isArray(raw.items)
       ? raw.items.map(x => ({ item: normItem(x && x.item), entryId: x && typeof x.entryId === 'string' ? x.entryId : null })).filter(x => x.item)
       : [];
     if (!items.length) { storage.remove(SESSION_KEY); return null; }
+    if (!(Date.now() - raw.startedAt < SESSION_HOURS * 3600000)) {
+      /* Left open too long. It still counts as done if anything in it was logged. */
+      storage.remove(SESSION_KEY);
+      if (items.some(x => x.entryId && S.entries.some(e => e.id === x.entryId))) {
+        recordWorkout(cleanText(raw.routineId, 64), cleanText(raw.name, 60) || 'Workout', parseYmd(raw.date) ? raw.date : today());
+        save();
+      }
+      return null;
+    }
     return {
       name: cleanText(raw.name, 60) || 'Workout', routineId: cleanText(raw.routineId, 64),
       startedAt: raw.startedAt, planAt: Number(raw.planAt) || 0,
@@ -1426,26 +1447,65 @@ function renderLogTab() {
   $('#log-btn').hidden = on || !freeOpen;
   $('#next-btn').hidden = !on;
   $('#log-bar').hidden = !on && !freeOpen;
-  if (on) renderWorkout(); else { renderStarts(); logForm.sync(); }
+  if (on) renderWorkout(); else logForm.sync();
   renderLogged();
 }
-/* The workout picker: one big button per routine, with how many times it has been done. */
-function renderStarts() {
-  fill($('#starts'),
-    h('h2', { class: 'sub sub-first', text: 'Start a workout' }),
+
+/* ---------- Start tab ----------
+   The first page. One big Start button. Tapping it lists the saved workouts,
+   each with how many times it has been done. Tapping a workout starts it. */
+let pickOpen = false;      // true once Start is tapped and the workout list is showing
+let pickAt = 0;
+function renderStart() {
+  const body = $('#start-body');
+  if (session) {
+    const done = session.items.filter(isDone).length;
+    body.className = 'scroll start-home';
+    fill(body,
+      h('h1', { class: 'title', text: 'Workout in progress' }),
+      h('div', { class: 'start-mid' },
+        h('h2', { class: 'start-now', text: session.name }),
+        h('p', { class: 'muted', text: `${done} of ${session.items.length} done` }),
+        h('button', { type: 'button', class: 'btn btn-primary btn-block btn-start', onclick: () => show('log') }, 'Resume'),
+        h('button', { type: 'button', class: 'btn btn-block', onclick: finishWorkout }, 'End workout')));
+    return;
+  }
+  if (!pickOpen) {
+    body.className = 'scroll start-home';
+    fill(body,
+      h('h1', { class: 'title', text: 'Start workout' }),
+      h('div', { class: 'start-mid' },
+        h('button', { type: 'button', class: 'btn btn-primary btn-block btn-start', onclick: openPick }, 'Start')));
+    return;
+  }
+  body.className = 'scroll';
+  fill(body,
+    h('div', { class: 'title-row' },
+      h('h1', { class: 'title', text: 'Pick a workout' }),
+      h('button', { type: 'button', class: 'btn btn-small', onclick: () => { pickOpen = false; renderStart(); } }, 'Back')),
+    logDate !== today() && h('p', { class: 'muted start-note', text: `Logging ${targetText()}.` }),
     S.routines.length
-      ? S.routines.map(r => {
+      ? h('div', { class: 'start-list' }, S.routines.map(r => {
           const n = timesDone(r.id), last = lastDone(r.id);
-          return h('button', { type: 'button', class: 'start-row', 'aria-label': `Start ${r.name}. Done ${count(n, 'time')}.`, onclick: () => startWorkout(r) },
+          return h('button', {
+            type: 'button', class: 'start-row', 'aria-label': `Start ${r.name}. Done ${count(n, 'time')}.`,
+            onclick: () => { if (Date.now() - pickAt > 400) startWorkout(r); },      // the second half of a double tap on Start lands here
+          },
             h('span', { class: 'start-main' },
               h('span', { class: 'start-name', text: r.name }),
               h('span', { class: 'row-sub', text: `${count(r.items.length, 'exercise')}${last ? `, last done ${whenText(last)}` : ''}` })),
-            h('span', { class: 'start-count' }, h('b', { text: String(n) }), h('small', { text: 'done' })));
-        })
+            h('span', { class: 'start-count' }, h('b', { text: String(n) }), h('small', { text: n === 1 ? 'time done' : 'times done' })));
+        }))
       : [h('p', { class: 'muted', text: 'No workouts saved yet.' }),
          h('div', { class: 'actions actions-tight' },
            h('button', { type: 'button', class: 'btn btn-primary btn-block', onclick: addStarters }, 'Add starter workouts'),
            h('button', { type: 'button', class: 'btn btn-block', onclick: () => { show('routines'); routineSheet(null); } }, 'Build my own'))]);
+}
+function openPick() {
+  pickOpen = true;
+  pickAt = Date.now();
+  renderStart();
+  $('#start-body').scrollTop = 0;
 }
 function renderWorkout() {
   const rows = session.items.map(row => ({ row, entry: (row.entryId && S.entries.find(e => e.id === row.entryId)) || null }));
@@ -1872,7 +1932,7 @@ function renderSettings() {
 
     h('h2', { class: 'sub', text: 'Delete' }),
     h('button', { type: 'button', class: 'btn btn-block btn-danger', onclick: deleteAllSheet }, 'Delete all data'),
-    h('p', { class: 'muted about', text: 'Workout Log 1.2. Everything stays on this device.' }));
+    h('p', { class: 'muted about', text: 'Workout Log 1.3. Everything stays on this device.' }));
 }
 
 function removeType(name) {
@@ -1993,7 +2053,8 @@ function deleteAllSheet() {
 
 /* ---------- Tabs ---------- */
 function refresh() {
-  if (active === 'log') { drawDate(); renderLogTab(); }
+  if (active === 'start') renderStart();
+  else if (active === 'log') { drawDate(); renderLogTab(); }
   else if (active === 'routines') renderRoutines();
   else if (active === 'history') renderHistory();
   else renderSettings();
@@ -2001,8 +2062,9 @@ function refresh() {
 /* After an import, a reset or a change to types or presets: everything on screen may be stale. */
 function afterDataChange() { Timer.drawPresets(); Timer.render(true); logForm.sync(); refresh(); }
 function show(tab) {
+  if (tab === 'start') pickOpen = false;       // the Start tab always opens on its big button
   active = tab;
-  for (const name of ['log', 'routines', 'history', 'settings']) $(`#view-${name}`).hidden = name !== tab;
+  for (const name of ['start', 'log', 'routines', 'history', 'settings']) $(`#view-${name}`).hidden = name !== tab;
   for (const btn of $('#tabs').children) {
     if (btn.dataset.tab === tab) btn.setAttribute('aria-current', 'page'); else btn.removeAttribute('aria-current');
   }
@@ -2338,7 +2400,7 @@ function init() {
   }
 
   Timer.setup();
-  show('log');
+  show(session ? 'log' : 'start');      // opens on the Start page, or straight back into a workout in progress
   if (!storage.ok) toast('Storage is blocked in this browser, so nothing will be saved.');
 
   /* Escape closes the top sheet or the full-screen timer. */
@@ -2372,9 +2434,6 @@ function init() {
 }
 init();
 })();
-</script>
-</body>
-</html>;
 </script>
 </body>
 </html>
