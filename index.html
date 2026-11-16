@@ -165,8 +165,8 @@ input { -webkit-user-select: text; user-select: text; }
 .input::placeholder { color: var(--ink-3); opacity: 1; }
 .input:focus, .input:focus-visible { outline: none; border-color: var(--ink); }
 .input[aria-invalid="true"] { border-color: var(--danger); }
-input[type="date"].input { text-align: left; }
-input[type="date"].input::-webkit-date-and-time-value { text-align: left; }
+input[type="date"].input, input[type="time"].input { text-align: left; }
+input[type="date"].input::-webkit-date-and-time-value, input[type="time"].input::-webkit-date-and-time-value { text-align: left; }
 .num-input { padding: 0 4px; text-align: center; font: 600 28px/1 var(--num); font-variant-numeric: tabular-nums; }
 .stepper { display: flex; gap: 6px; }
 .stepper .num-input { flex: 1 1 0; }
@@ -465,7 +465,83 @@ button.row:focus-visible { outline-offset: -3px; }
 .toast span { flex: 1 1 auto; min-width: 0; overflow-wrap: anywhere; }
 .toast button { flex: none; height: 40px; padding: 0 14px; border: 2px solid #000; border-radius: 10px; color: #000; font: 600 19px/1 var(--num); }
 
+/* ---------- Sections: the home screen, and the top bar of Schedule and Calories ---------- */
+.shell {
+  display: flex; flex-direction: column;
+  height: 100vh; height: 100dvh;
+  max-width: 560px; margin: 0 auto;
+  padding: 0 var(--safe-r) 0 var(--safe-l);
+}
+.home { display: flex; flex-direction: column; padding-top: calc(var(--safe-t) + 18px); padding-bottom: calc(var(--safe-b) + 18px); }
+.home-list { flex: 1 0 auto; display: grid; grid-auto-rows: 1fr; gap: 12px; }
+.home-card {
+  display: flex; align-items: center; justify-content: space-between; gap: 16px;
+  width: 100%; min-height: 112px; padding: 14px 20px;
+  border: 2px solid var(--outline); border-radius: 18px; color: var(--ink); text-align: left;
+}
+.home-card:active { background: var(--pressed); }
+.home-main { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.home-name { font: 600 46px/1 var(--num); }
+.home-sub { color: var(--ink-2); font-size: 15px; line-height: 1.3; overflow-wrap: anywhere; }
+.home-card .ico { flex: none; color: var(--ink-2); }
+.topbar { flex: none; padding-top: var(--safe-t); border-bottom: 1px solid var(--rule); background: var(--bg); }
+.topbar-row { display: flex; align-items: center; gap: 12px; height: 60px; padding: 0 10px; }
+.topbar h1 { font: 600 28px/1 var(--num); }
+.actionbar-end { padding-bottom: calc(var(--safe-b) + 12px); }
+.row.two { grid-template-columns: minmax(0, 1fr) auto; }
+
+/* ---------- Schedule: month grid, then the picked day's events ---------- */
+.cal-week, .cal-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); }
+.cal-week { margin-bottom: 2px; color: var(--ink-2); font-size: 13px; line-height: 1.6; text-align: center; }
+.cal-grid { row-gap: 2px; touch-action: pan-y; }
+.cal-day { display: flex; flex-direction: column; align-items: center; gap: 3px; min-height: 52px; padding-top: 4px; border-radius: 12px; color: var(--ink); }
+.cal-day:active { background: var(--pressed); }
+.cal-day:focus-visible { outline-offset: -3px; }
+.cal-num {
+  display: flex; align-items: center; justify-content: center;
+  width: 36px; height: 36px; border: 2px solid transparent; border-radius: 50%;
+  font: 600 22px/1 var(--num); font-variant-numeric: tabular-nums;
+}
+.cal-day.out .cal-num { color: var(--outline); }
+.cal-day.now .cal-num { border-color: var(--ink); }
+.cal-day[aria-pressed="true"] .cal-num { border-color: var(--ink); background: var(--ink); color: #000; }
+.cal-dots { display: flex; gap: 3px; height: 5px; }
+.cal-dots i { width: 5px; height: 5px; border-radius: 50%; background: var(--ink-2); }
+.cal-none { margin-top: 12px; }
+.ev-time { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; white-space: nowrap; }
+.ev-time b { font: 600 21px/1 var(--num); font-variant-numeric: tabular-nums; }
+.ev-time small { color: var(--ink-2); font-size: 14px; line-height: 1; }
+.ev-clear { justify-self: start; }
+
+/* ---------- Calories ---------- */
+.cal-total { display: flex; align-items: baseline; gap: 10px; }
+.cal-total b { font: 600 64px/1 var(--num); font-variant-numeric: tabular-nums; }
+.cal-total .of { color: var(--ink-2); font: 600 24px/1 var(--num); }
+.cal-hit { align-self: center; margin-left: auto; width: 34px; height: 34px; border-color: var(--ink); background: var(--ink); color: #000; }
+.cal-bar { height: 10px; margin: 12px 0 16px; border-radius: 999px; background: var(--pressed); overflow: hidden; }
+.cal-bar i { display: block; height: 100%; border-radius: 999px; background: var(--ink); transform: scaleX(0); transform-origin: left center; transition: transform .4s cubic-bezier(.2, .8, .2, 1); }
+.meal-form { margin-top: 24px; }
+.meal-add { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px; }
+.meal-add .btn { min-height: 56px; }
+.again-label { margin-top: 18px; }
+
+/* Goal hit: confetti over the whole screen for a few seconds. A tap closes it. */
+#party {
+  position: fixed; inset: 0; z-index: 60;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(0, 0, 0, .86); opacity: 0; transition: opacity .25s;
+}
+#party.show { opacity: 1; }
+#party canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+.party-card { position: relative; padding: 0 24px; text-align: center; transform: scale(.5); transition: transform .5s cubic-bezier(.2, 1.7, .4, 1); }
+#party.show .party-card { transform: none; }
+.party-big { font: 600 88px/1 var(--num); }
+.party-sub { margin-top: 14px; font: 600 32px/1.15 var(--num); }
+
 /* ---------- Small screens, reduced motion ---------- */
+@media (max-width: 420px) {
+  #timer[data-wide] .t-round { display: none; }
+}
 @media (max-width: 350px) {
   .step { width: 40px; }
   .t-round { display: none; }
@@ -476,6 +552,9 @@ button.row:focus-visible { outline-offset: -3px; }
   .chip { font-size: 17px; }
   .row-a { min-width: 60px; }
   .row-b { min-width: 50px; }
+  .home-name { font-size: 38px; }
+  .cal-total b { font-size: 52px; }
+  .party-big { font-size: 68px; }
 }
 @media (orientation: landscape) and (max-height: 480px) {
   .t-row { height: 52px; }
@@ -491,9 +570,78 @@ button.row:focus-visible { outline-offset: -3px; }
 </head>
 <body>
 
-<div id="app">
+<!-- Home screen: pick Schedule, Workout or Calories -->
+<div id="home" class="shell">
+  <main class="scroll home" id="home-body"></main>
+</div>
+
+<!-- Schedule -->
+<div id="sched" class="shell" hidden>
+  <header class="topbar">
+    <div class="topbar-row">
+      <button type="button" class="t-btn t-ico" data-home aria-label="Back to the home screen"></button>
+      <h1>Schedule</h1>
+    </div>
+  </header>
+  <main class="scroll" id="sched-scroll">
+    <div class="date-row">
+      <button type="button" id="m-prev" class="icon-btn" aria-label="Previous month"></button>
+      <div class="date-pick" id="m-pick">
+        <span class="date-main" id="m-main"></span>
+        <input type="date" id="m-input" aria-label="Go to a date">
+      </div>
+      <button type="button" id="m-next" class="icon-btn" aria-label="Next month"></button>
+    </div>
+    <div id="sched-body"></div>
+  </main>
+  <div class="actionbar actionbar-end">
+    <button type="button" id="ev-add" class="btn btn-primary btn-block">Add event</button>
+  </div>
+</div>
+
+<!-- Calories -->
+<div id="cals" class="shell" hidden>
+  <header class="topbar">
+    <div class="topbar-row">
+      <button type="button" class="t-btn t-ico" data-home aria-label="Back to the home screen"></button>
+      <h1>Calories</h1>
+    </div>
+  </header>
+  <main class="scroll" id="cal-scroll">
+    <div class="date-row" id="c-dates">
+      <button type="button" id="c-prev" class="icon-btn" aria-label="Previous day"></button>
+      <div class="date-pick" id="c-pick">
+        <span class="date-main" id="c-main"></span>
+        <span class="date-side" id="c-side"></span>
+        <input type="date" id="c-input" aria-label="Day">
+      </div>
+      <button type="button" id="c-next" class="icon-btn" aria-label="Next day"></button>
+    </div>
+    <div id="cal-top"></div>
+    <form id="meal-form" class="form meal-form" novalidate autocomplete="off" hidden>
+      <div class="field">
+        <label for="meal-name">Meal (optional)</label>
+        <input id="meal-name" class="input" type="text" maxlength="60" autocomplete="off" autocapitalize="sentences" placeholder="Lunch" enterkeyhint="next">
+        <p class="field-err" role="alert"></p>
+      </div>
+      <div class="field">
+        <label for="meal-cal">Calories</label>
+        <div class="meal-add">
+          <input id="meal-cal" class="input num-input" type="text" inputmode="numeric" maxlength="5" autocomplete="off" placeholder="0">
+          <button type="submit" class="btn btn-primary">Add meal</button>
+        </div>
+        <p class="field-err" role="alert"></p>
+      </div>
+    </form>
+    <div id="cal-list"></div>
+  </main>
+</div>
+
+<!-- Workout -->
+<div id="app" hidden>
   <header id="timer" data-state="idle">
     <div class="t-row">
+      <button type="button" class="t-btn t-ico" data-home aria-label="Back to the home screen"></button>
       <button type="button" id="t-open" class="t-open" aria-label="Open full-screen timer"></button>
       <span id="t-round" class="t-round" hidden></span>
       <div id="t-presets" class="t-presets" role="group" aria-label="Start rest timer"></div>
@@ -566,6 +714,14 @@ button.row:focus-visible { outline-offset: -3px; }
   </div>
 </div>
 
+<div id="party" hidden>
+  <canvas id="party-canvas" aria-hidden="true"></canvas>
+  <div class="party-card">
+    <p class="party-big">Goal hit!</p>
+    <p class="party-sub" id="party-sub"></p>
+  </div>
+</div>
+
 <div id="sheets"></div>
 <div id="toasts" role="status" aria-live="polite"></div>
 <p id="announce" class="sr-only" aria-live="assertive"></p>
@@ -579,8 +735,10 @@ button.row:focus-visible { outline-offset: -3px; }
 /* =====================================================================
    Workout Log
    One file, no account, no server. Everything is kept in localStorage
-   on this device. Sections below: helpers, storage, shared UI pieces,
-   entry form, the five tabs, rest timer, startup.
+   on this device. It opens on a home screen with three sections:
+   Schedule, Workout and Calories. Code below: helpers, storage, shared
+   UI pieces, entry form, the five workout tabs, home screen, schedule,
+   calories, rest timer, startup.
    ===================================================================== */
 
 /* ---------- Helpers ---------- */
@@ -642,6 +800,10 @@ const ICONS = {
   routines: '<path d="M9 6h11M9 12h11M9 18h11"/><path d="M4 6h.01M4 12h.01M4 18h.01" stroke-width="3"/>',
   history: '<path d="M5 20v-8M12 20V4M19 20v-5" stroke-width="2.6"/>',
   settings: '<path d="M4 7h9M19 7h1M4 17h1M11 17h9"/><circle cx="16" cy="7" r="2.5"/><circle cx="8" cy="17" r="2.5"/>',
+  home: '<path d="M4 11.5 12 4l8 7.5"/><path d="M6.5 10v9.5h11V10"/>',
+  calendar: '<rect x="3.5" y="5" width="17" height="15.5" rx="3"/><path d="M3.5 10.5h17M8 3v4M16 3v4"/>',
+  lift: '<path d="M2.5 12h19M6.5 7v10M17.5 7v10M3.5 9.5v5M20.5 9.5v5"/>',
+  flame: '<path d="M12 3c.6 3.2 5 5 5 10a5 5 0 0 1-10 0c0-1.7.7-3 1.6-4 .3 1.6 1 2.4 1.9 2.8C10.3 9 10.8 5.6 12 3z"/>',
 };
 function icon(name, size = 24) {
   const el = sv('svg', {
@@ -816,6 +978,33 @@ function normWorkout(w) {
   if (!w || typeof w !== 'object' || !parseYmd(w.date)) return null;
   return { id: cleanText(w.id, 64) || uid(), routineId: cleanText(w.routineId, 64), name: cleanText(w.name, 60), date: w.date, at: Number.isFinite(w.at) ? w.at : Date.now() };
 }
+/* Schedule and Calories. These were added in 1.4, so data saved before then simply has none of them. */
+const TIME_RE = /^([01]\d|2[0-3]):[0-5]\d$/;
+const CAL_MAX = 20000;       // most calories in one meal, or in a daily goal
+function normEvent(e) {
+  if (!e || typeof e !== 'object' || !parseYmd(e.date)) return null;
+  const title = cleanText(e.title, 80);
+  if (!title) return null;
+  const start = TIME_RE.test(e.start) ? e.start : '';
+  const end = start && TIME_RE.test(e.end) && e.end > start ? e.end : '';
+  return { id: cleanText(e.id, 64) || uid(), date: e.date, title, start, end, at: Number.isFinite(e.at) ? e.at : Date.now() };
+}
+function normMeal(m) {
+  if (!m || typeof m !== 'object' || !parseYmd(m.date)) return null;
+  const cal = cleanNum(m.cal, CAL_MAX, true);
+  if (!cal) return null;
+  return { id: cleanText(m.id, 64) || uid(), date: m.date, name: cleanText(m.name, 60), cal, at: Number.isFinite(m.at) ? m.at : Date.now() };
+}
+/* The daily goal is kept as a list of { date, goal }, oldest first. A goal counts from its date on,
+   so changing the goal later never changes whether an earlier day was a hit. */
+function normGoals(list) {
+  const byDay = new Map();
+  for (const g of Array.isArray(list) ? list : []) {
+    const goal = g && typeof g === 'object' ? cleanNum(g.goal, CAL_MAX, true) : null;
+    if (goal && parseYmd(g.date)) byDay.set(g.date, goal);
+  }
+  return [...byDay.entries()].sort((a, b) => a[0].localeCompare(b[0])).map(([date, goal]) => ({ date, goal }));
+}
 function normState(raw) {
   const src = Array.isArray(raw) ? { entries: raw } : (raw && typeof raw === 'object' ? raw : {});
   const ids = new Set();
@@ -827,6 +1016,9 @@ function normState(raw) {
     workouts: (Array.isArray(src.workouts) ? src.workouts : []).map(normWorkout).filter(firstOfId),
     types: normTypes(src.types),
     settings: normSettings(src.settings),
+    events: (Array.isArray(src.events) ? src.events : []).map(normEvent).filter(firstOfId),
+    meals: (Array.isArray(src.meals) ? src.meals : []).map(normMeal).filter(firstOfId),
+    calGoals: normGoals(src.calGoals),
   };
   if (!state.types.some(t => t.name === state.settings.lastType)) state.settings.lastType = state.types[0].name;
   return state;
@@ -852,6 +1044,7 @@ function save() {
 /* ---------- Reading the log ---------- */
 const strengthName = () => (S.types.find(t => t.name === 'Strength') || S.types.find(t => t.mode === 'reps') || { name: 'Strength' }).name;
 const hasDistance = () => !S.settings.strengthOnly || S.entries.some(e => e.mode === 'dist');
+const dataSummary = st => `${count(st.entries.length, 'entry', 'entries')}, ${count(st.routines.length, 'routine')}, ${count(st.events.length, 'event')} and ${count(st.meals.length, 'meal')}`;
 const timesDone = id => S.workouts.filter(w => w.routineId === id).length;
 const lastDone = id => S.workouts.filter(w => w.routineId === id).map(w => w.date).sort().pop() || '';
 function recordWorkout(routineId, name, date) {
@@ -937,7 +1130,7 @@ const sheets = [];
 let seq = 0;
 function syncInert() {
   const big = $('#bigtimer');
-  $('#app').inert = sheets.length > 0 || !big.hidden;
+  for (const key in SHELLS) $(SHELLS[key]).inert = sheets.length > 0 || !big.hidden;
   big.inert = sheets.length > 0;
   sheets.forEach((s, i) => { s.wrap.inert = i < sheets.length - 1; });
 }
@@ -1905,7 +2098,8 @@ function renderSettings() {
     !storage.ok && h('p', { class: 'banner', text: 'This browser is blocking storage, so nothing you log here is kept after the page closes. Open the app in a regular browser window, not a private one.' }),
 
     h('h2', { class: 'sub sub-first', text: 'Data' }),
-    h('p', { class: 'muted', text: `${count(S.entries.length, 'entry', 'entries')} and ${count(S.routines.length, 'routine')} saved on this device. ${backup}` }),
+    h('p', { class: 'muted', text: `${dataSummary(S)} saved on this device. ${backup}` }),
+    h('p', { class: 'muted', text: 'A backup holds everything: workouts, schedule and calories.' }),
     h('div', { class: 'actions actions-tight' },
       h('button', { type: 'button', class: 'btn btn-block', onclick: exportBackup }, 'Export backup'),
       h('button', { type: 'button', class: 'btn btn-block', onclick: () => $('#import-file').click() }, 'Import backup')),
@@ -1932,7 +2126,7 @@ function renderSettings() {
 
     h('h2', { class: 'sub', text: 'Delete' }),
     h('button', { type: 'button', class: 'btn btn-block btn-danger', onclick: deleteAllSheet }, 'Delete all data'),
-    h('p', { class: 'muted about', text: 'Workout Log 1.3. Everything stays on this device.' }));
+    h('p', { class: 'muted about', text: 'Workout Log 1.4. Everything stays on this device.' }));
 }
 
 function removeType(name) {
@@ -1971,7 +2165,7 @@ function typeSheet() {
 }
 
 function exportBackup() {
-  const payload = { app: 'workout-log', version: 1, exportedAt: new Date().toISOString(), entries: S.entries, routines: S.routines, workouts: S.workouts, types: S.types, settings: S.settings };
+  const payload = { app: 'workout-log', version: 1, exportedAt: new Date().toISOString(), entries: S.entries, routines: S.routines, workouts: S.workouts, types: S.types, settings: S.settings, events: S.events, meals: S.meals, calGoals: S.calGoals };
   const json = JSON.stringify(payload, null, 2);
   const name = `workout-log-${today()}.json`;
   const done = () => { S.settings.lastBackup = Date.now(); save(); if (active === 'settings') renderSettings(); toast('Backup exported.', { force: true }); };
@@ -2001,35 +2195,45 @@ function importBackup(file) {
     let raw;
     try { raw = JSON.parse(String(reader.result)); } catch (err) { toast('That file is not a Workout Log backup.'); return; }
     const incoming = normState(raw);
-    if (!incoming.entries.length && !incoming.routines.length) { toast('No workouts found in that file.'); return; }
-    if (!S.entries.length && !S.routines.length) { applyImport(incoming, true); return; }
+    /* A backup made before 1.4 knows nothing about the schedule or calories, so it must not wipe them. */
+    const hasExtras = !!raw && !Array.isArray(raw) && (Array.isArray(raw.events) || Array.isArray(raw.meals) || Array.isArray(raw.calGoals));
+    const isEmpty = st => !st.entries.length && !st.routines.length && !st.events.length && !st.meals.length;
+    if (isEmpty(incoming)) { toast('Nothing to import in that file.'); return; }
+    if (isEmpty(S)) { applyImport(incoming, true, hasExtras); return; }
     const sheet = openSheet({
       title: 'Import backup',
       content: h('div', { class: 'stack' },
-        h('p', { text: `This backup has ${count(incoming.entries.length, 'entry', 'entries')} and ${count(incoming.routines.length, 'routine')}. This device has ${count(S.entries.length, 'entry', 'entries')} and ${count(S.routines.length, 'routine')}.` }),
-        h('button', { type: 'button', class: 'btn btn-block btn-primary', onclick: () => { sheet.close(); applyImport(incoming, false); } }, 'Add to what is here'),
-        h('button', { type: 'button', class: 'btn btn-block btn-danger', onclick: () => { sheet.close(); applyImport(incoming, true); } }, 'Replace what is here')),
+        h('p', { text: `This backup has ${dataSummary(incoming)}. This device has ${dataSummary(S)}.` }),
+        !hasExtras && h('p', { class: 'muted', text: 'This backup is from before the schedule and calories were added. Your events and meals stay as they are either way.' }),
+        h('button', { type: 'button', class: 'btn btn-block btn-primary', onclick: () => { sheet.close(); applyImport(incoming, false, hasExtras); } }, 'Add to what is here'),
+        h('button', { type: 'button', class: 'btn btn-block btn-danger', onclick: () => { sheet.close(); applyImport(incoming, true, hasExtras); } }, 'Replace what is here')),
     });
   };
   reader.readAsText(file);
 }
-function applyImport(incoming, replace) {
+function applyImport(incoming, replace, hasExtras) {
   const before = clone(S);
   let message;
   if (replace) {
+    if (!hasExtras) { incoming.events = S.events; incoming.meals = S.meals; incoming.calGoals = S.calGoals; }
     S = incoming;
     session = null; saveSession();
-    message = `Imported ${count(S.entries.length, 'entry', 'entries')} and ${count(S.routines.length, 'routine')}.`;
+    message = `Imported. This device now has ${dataSummary(S)}.`;
   } else {
-    const have = new Set([...S.entries, ...S.routines, ...S.workouts].map(x => x.id));
+    const have = new Set([...S.entries, ...S.routines, ...S.workouts, ...S.events, ...S.meals].map(x => x.id));
     S.workouts.push(...incoming.workouts.filter(w => !have.has(w.id)));
     const entries = incoming.entries.filter(e => !have.has(e.id));
     const routines = incoming.routines.filter(r => !have.has(r.id));
+    const events = incoming.events.filter(e => !have.has(e.id));
+    const meals = incoming.meals.filter(m => !have.has(m.id));
     S.entries.push(...entries);
     S.routines.push(...routines);
+    S.events.push(...events);
+    S.meals.push(...meals);
+    S.calGoals = normGoals([...incoming.calGoals, ...S.calGoals]);       // on the same date, the goal already on this device wins
     for (const t of incoming.types) if (!S.types.some(x => sameName(x.name, t.name))) S.types.push(t);
     const skipped = incoming.entries.length - entries.length;
-    message = `Added ${count(entries.length, 'entry', 'entries')} and ${count(routines.length, 'routine')}.${skipped ? ` ${count(skipped, 'entry was', 'entries were')} already here.` : ''}`;
+    message = `Added ${count(entries.length, 'entry', 'entries')}, ${count(routines.length, 'routine')}, ${count(events.length, 'event')} and ${count(meals.length, 'meal')}.${skipped ? ` ${count(skipped, 'entry was', 'entries were')} already here.` : ''}`;
   }
   save(); afterDataChange();
   toast(message, { undo: () => { S = before; save(); afterDataChange(); } });
@@ -2038,7 +2242,7 @@ function deleteAllSheet() {
   const sheet = openSheet({
     title: 'Delete all data?',
     content: h('div', { class: 'stack' },
-      h('p', { text: `This removes ${count(S.entries.length, 'entry', 'entries')} and ${count(S.routines.length, 'routine')} from this device. Export a backup first if you might want them back.` }),
+      h('p', { text: `This removes ${dataSummary(S)} from this device. Export a backup first if you might want them back.` }),
       h('button', { type: 'button', class: 'btn btn-block btn-danger', onclick: () => {
         sheet.close();
         const before = clone(S);
@@ -2051,8 +2255,483 @@ function deleteAllSheet() {
   });
 }
 
+/* ---------- Sections ----------
+   The app opens on the home screen. It has three sections: Schedule, Workout and Calories.
+   Every section has a home button in its top left corner. */
+const SHELLS = { home: '#home', schedule: '#sched', workout: '#app', calories: '#cals' };
+const MONTHS_FULL = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+let section = 'home';
+let wentAt = 0;            // when the section last changed, so the second half of a double tap is ignored
+
+function go(name) {
+  section = name;
+  wentAt = Date.now();
+  for (const key in SHELLS) $(SHELLS[key]).hidden = key !== name;
+  clearTimeout(toastTimer);
+  $('#toasts').replaceChildren();          // a message from the section just left does not follow along
+  const el = document.activeElement;
+  if (el && el !== document.body && el.blur) el.blur();
+  if (name === 'workout') { show(session ? 'log' : 'start'); return; }      // the Start page, or straight back into a workout in progress
+  if (name === 'schedule') { schedSel = today(); schedYM = schedSel.slice(0, 7); $('#sched-scroll').scrollTop = 0; }
+  if (name === 'calories') { calDate = today(); calAuto = true; $('#cal-scroll').scrollTop = 0; }
+  refresh();
+}
+
+/* ---------- Home screen: three big buttons, each with one line about today ---------- */
+function renderHome() {
+  const t = today();
+  const todays = eventsOn(t);
+  const next = S.events.filter(e => e.date > t).sort(byWhen)[0];
+  const schedText = todays.length === 1 ? `Today: ${todays[0].title}`
+    : todays.length ? `${todays.length} events today`
+    : next ? `Next: ${next.title}, ${daysAgo(next.date) === -1 ? 'tomorrow' : fmtDate(next.date)}`
+    : 'Nothing scheduled';
+  const lastDay = S.entries.reduce((max, e) => (e.date > max ? e.date : max), '');
+  const workText = session ? `In progress: ${session.name}` : lastDay ? `Last workout ${whenText(lastDay)}` : 'No workouts yet';
+  const goal = goalFor(t), run = calStats().run;
+  const calText = goal ? `${fmtNum(dayTotal(t), 0)} of ${fmtNum(goal, 0)} today${run ? `, ${run} day streak` : ''}` : 'Set a daily goal to start';
+  const card = (name, label, text, ico) => h('button', { type: 'button', class: 'home-card', onclick: () => go(name) },
+    h('span', { class: 'home-main' }, h('span', { class: 'home-name', text: label }), h('span', { class: 'home-sub', text })),
+    icon(ico, 40));
+  fill($('#home-body'),
+    h('h1', { class: 'title', text: new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' }) }),
+    h('div', { class: 'home-list' },
+      card('schedule', 'Schedule', schedText, 'calendar'),
+      card('workout', 'Workout', workText, 'lift'),
+      card('calories', 'Calories', calText, 'flame')));
+}
+
+/* ---------- Schedule ----------
+   A month calendar. Tap a day to see what is on it, then Add event. An event needs
+   only a name. A start time and an end time are optional. */
+let schedSel = today();                 // the day picked in the grid
+let schedYM = schedSel.slice(0, 7);     // the month on screen, as YYYY-MM
+let swipedAt = 0;
+const byWhen = (a, b) => a.date.localeCompare(b.date) || a.start.localeCompare(b.start) || a.at - b.at;     // events with no time come first in their day
+const eventsOn = date => S.events.filter(e => e.date === date).sort(byWhen);
+function fmtTime(s) { const hh = +s.slice(0, 2); return `${hh % 12 || 12}:${s.slice(3, 5)} ${hh < 12 ? 'AM' : 'PM'}`; }
+const timeText = e => (e.start ? (e.end ? `${fmtTime(e.start)} to ${fmtTime(e.end)}` : fmtTime(e.start)) : '');
+function nearDay(s) { const n = daysAgo(s); return n === 0 ? 'Today' : n === 1 ? 'Yesterday' : n === -1 ? 'Tomorrow' : fmtDate(s); }
+
+function pickDay(date) {
+  if (Date.now() - swipedAt < 350) return;       // the tap that can follow a swipe
+  schedSel = date;
+  schedYM = date.slice(0, 7);
+  renderSchedule();
+}
+function moveMonth(n) {
+  const d = new Date(+schedYM.slice(0, 4), +schedYM.slice(5, 7) - 1 + n, 1);
+  schedYM = ymd(d).slice(0, 7);
+  schedSel = schedYM === today().slice(0, 7) ? today() : `${schedYM}-01`;
+  renderSchedule();
+}
+function renderSchedule() {
+  const t = today();
+  const y = +schedYM.slice(0, 4), m = +schedYM.slice(5, 7);
+  $('#m-main').textContent = `${MONTHS_FULL[m - 1]} ${y}`;
+  $('#m-input').value = schedSel;
+  const offset = new Date(y, m - 1, 1).getDay();                              // weeks start on Sunday
+  const cells = Math.ceil((offset + new Date(y, m, 0).getDate()) / 7) * 7;
+  const counts = new Map();
+  for (const e of S.events) counts.set(e.date, (counts.get(e.date) || 0) + 1);
+  const days = [];
+  for (let i = 0; i < cells; i++) {
+    const d = ymd(new Date(y, m - 1, 1 - offset + i));
+    const n = counts.get(d) || 0;
+    days.push(h('button', {
+      type: 'button', class: `cal-day${d.slice(0, 7) === schedYM ? '' : ' out'}${d === t ? ' now' : ''}`,
+      'aria-pressed': String(d === schedSel), 'aria-label': `${fmtDate(d)}${n ? `, ${count(n, 'event')}` : ''}`,
+      onclick: () => pickDay(d),
+    },
+      h('span', { class: 'cal-num', text: String(+d.slice(8)) }),
+      h('span', { class: 'cal-dots', 'aria-hidden': 'true' }, Array.from({ length: Math.min(n, 3) }, () => h('i')))));
+  }
+  const list = eventsOn(schedSel);
+  const soon = schedSel === t ? S.events.filter(e => e.date > t).sort(byWhen).slice(0, 5) : [];
+  fill($('#sched-body'),
+    h('div', { class: 'cal-week', 'aria-hidden': 'true' }, DAYS.map(d => h('span', { text: d }))),
+    h('div', { class: 'cal-grid' }, days),
+    h('section', { class: 'day' },
+      h('div', { class: 'day-head' },
+        h('h2', { text: nearDay(schedSel) }),
+        schedSel !== t && h('button', { type: 'button', class: 'btn btn-small', onclick: () => pickDay(t) }, 'Today')),
+      list.length ? list.map(e => eventRow(e)) : h('p', { class: 'muted cal-none', text: 'Nothing scheduled.' })),
+    soon.length > 0 && [h('h2', { class: 'sub', text: 'Coming up' }), soon.map(e => eventRow(e, true))]);
+  $('#ev-add').textContent = schedSel === t ? 'Add event' : `Add event on ${shortDate(schedSel)}`;
+}
+function eventRow(e, withDate) {
+  const time = timeText(e);
+  return h('button', {
+    type: 'button', class: 'row two', 'aria-label': `Edit ${e.title}, ${fmtDate(e.date)}${time ? `, ${time}` : ''}`,
+    onclick: () => eventSheet(e),
+  },
+    h('span', { class: 'row-main' },
+      h('span', { class: 'row-name', text: e.title }),
+      withDate && h('span', { class: 'row-sub', text: nearDay(e.date) })),
+    e.start && h('span', { class: 'ev-time' }, h('b', { text: fmtTime(e.start) }), e.end && h('small', { text: `to ${fmtTime(e.end)}` })));
+}
+/* Add an event on the picked day, or edit one. */
+function eventSheet(ev) {
+  const n = ++seq;
+  const nameIn = h('input', { id: `ev-name-${n}`, class: 'input', type: 'text', maxlength: '80', autocomplete: 'off', autocapitalize: 'sentences', placeholder: 'Dentist', enterkeyhint: 'done' });
+  const dateIn = h('input', { id: `ev-date-${n}`, class: 'input', type: 'date' });
+  const startIn = h('input', { id: `ev-start-${n}`, class: 'input', type: 'time' });
+  const endIn = h('input', { id: `ev-end-${n}`, class: 'input', type: 'time' });
+  const clearBtn = h('button', { type: 'button', class: 'btn btn-small ev-clear', onclick: () => { startIn.value = ''; endIn.value = ''; tidy(); } }, 'Clear times');
+  const inputs = [nameIn, dateIn, startIn, endIn];
+  nameIn.value = ev ? ev.title : '';
+  dateIn.value = ev ? ev.date : schedSel;
+  startIn.value = ev ? ev.start : '';
+  endIn.value = ev ? ev.end : '';
+  function tidy() {
+    for (const input of inputs) {
+      input.removeAttribute('aria-invalid');
+      input.closest('.field').querySelector('.field-err').textContent = '';
+    }
+    clearBtn.hidden = !startIn.value && !endIn.value;
+  }
+  for (const input of inputs) { input.addEventListener('input', tidy); input.addEventListener('change', tidy); }
+  /* Return on the name closes the keyboard, so the date and times can be reached. Saving is its own button. */
+  nameIn.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.isComposing) { e.preventDefault(); nameIn.blur(); } });
+  const sheet = openSheet({
+    title: ev ? 'Edit event' : 'Add event',
+    onSubmit() {
+      const title = cleanText(nameIn.value, 80);
+      const date = dateIn.value, start = startIn.value.slice(0, 5), end = endIn.value.slice(0, 5);
+      if (!title) { fieldError(nameIn, 'Give the event a name.'); return; }
+      if (!parseYmd(date)) { fieldError(dateIn, 'Pick a date.'); return; }
+      if (end && !start) { fieldError(startIn, 'Add a start time, or clear the end time.'); return; }
+      if (end && end <= start) { fieldError(endIn, 'The end time needs to be after the start time.'); return; }
+      const values = { title, date, start: TIME_RE.test(start) ? start : '', end: TIME_RE.test(end) ? end : '' };
+      sheet.close();
+      schedSel = date;
+      schedYM = date.slice(0, 7);
+      if (ev) {
+        const current = S.events.find(e => e.id === ev.id);
+        if (!current) { refresh(); toast('That event is no longer on the calendar.'); return; }
+        Object.assign(current, values);
+        save(); refresh(); toast('Saved changes.');
+        return;
+      }
+      const rec = { id: uid(), ...values, at: Date.now() };
+      S.events.push(rec);
+      save(); refresh(); buzz(15); askPersist();
+      toast(`Added ${title}.`, { undo: () => { S.events = S.events.filter(e => e.id !== rec.id); save(); refresh(); toast('Removed.'); } });
+    },
+    content: [
+      h('div', { class: 'form' },
+        field('Event', nameIn),
+        field('Date', dateIn),
+        h('div', { class: 'cols' }, field('Start (optional)', startIn), field('End (optional)', endIn)),
+        clearBtn),
+      h('div', { class: 'actions' },
+        h('button', { type: 'submit', class: 'btn btn-primary btn-block' }, ev ? 'Save changes' : 'Add event'),
+        ev && h('button', { type: 'button', class: 'btn btn-danger btn-block', onclick: () => { sheet.close(); removeEvent(ev.id); } }, 'Delete event')),
+    ],
+  });
+  tidy();
+  if (!ev) setTimeout(() => nameIn.focus(), 300);
+}
+function removeEvent(id) {
+  const i = S.events.findIndex(e => e.id === id);
+  if (i < 0) return;
+  const [removed] = S.events.splice(i, 1);
+  save(); refresh();
+  toast(`Deleted ${removed.title}.`, { undo: () => {
+    if (!S.events.some(e => e.id === removed.id)) S.events.push(removed);
+    save(); refresh();
+  } });
+}
+
+/* ---------- Calories ----------
+   Set a daily goal, then add each meal with its calories. A day is a hit once its
+   total reaches the goal. The streak is how many days in a row were hits. */
+let calDate = today();
+let calAuto = true;        // true while the page should follow today's date
+let lastMealAt = 0;
+let lastFrac = 0;          // where the progress bar was, so it slides to its new place
+let partyTimer = 0, partyHide = 0, partyStop = null, partyAt = 0;
+const mealsOn = date => S.meals.filter(m => m.date === date).sort((a, b) => a.at - b.at);
+const dayTotal = date => S.meals.reduce((sum, m) => (m.date === date ? sum + m.cal : sum), 0);
+/* The goal in force on a day. 0 means no goal has been set yet. */
+function goalFor(date) {
+  let goal = 0;
+  for (const g of S.calGoals) { if (g.date > date) break; goal = g.goal; }
+  return goal || (S.calGoals.length ? S.calGoals[0].goal : 0);       // days before the first goal use the first goal
+}
+function setGoal(n) {
+  const t = today();
+  S.calGoals = S.calGoals.filter(g => g.date < t);
+  S.calGoals.push({ date: t, goal: n });
+}
+/* run: days in a row the goal was hit, counting today once today is a hit. Until then yesterday's run still stands. */
+function calStats() {
+  const totals = new Map();
+  for (const m of S.meals) totals.set(m.date, (totals.get(m.date) || 0) + m.cal);
+  const hit = d => { const g = goalFor(d); return g > 0 && (totals.get(d) || 0) >= g; };
+  let d = today(), run = 0;
+  if (!hit(d)) d = addDays(d, -1);
+  while (hit(d)) { run += 1; d = addDays(d, -1); }
+  let best = run, len = 0, prev = '';
+  for (const day of [...totals.keys()].sort()) {
+    if (!hit(day)) { len = 0; prev = ''; continue; }
+    len = prev && addDays(prev, 1) === day ? len + 1 : 1;
+    prev = day;
+    if (len > best) best = len;
+  }
+  return { run, best };
+}
+function recentMeals(limit) {
+  const out = [], seen = new Set();
+  for (const m of S.meals.slice().sort((a, b) => b.at - a.at)) {
+    if (!m.name) continue;
+    const key = `${m.name.toLowerCase()}|${m.cal}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push(m);
+    if (out.length >= limit) break;
+  }
+  return out;
+}
+
+function setCalDate(date) {
+  calDate = parseYmd(date) && date <= today() ? date : today();
+  calAuto = calDate === today();
+  renderCalories();
+}
+function renderCalories() {
+  const t = today();
+  if (calDate > t) calDate = t;
+  const ready = S.calGoals.length > 0;
+  $('#c-dates').hidden = !ready;
+  $('#meal-form').hidden = !ready;
+  if (!ready) {
+    fill($('#cal-top'), emptyState('Daily calorie goal', 'Set the number of calories you want to hit each day. You can change it any time.', 'Set goal', goalSheet));
+    fill($('#cal-list'));
+    return;
+  }
+  const isToday = calDate === t, ago = daysAgo(calDate);
+  $('#c-main').textContent = isToday ? 'Today' : fmtDate(calDate);
+  $('#c-side').textContent = isToday ? fmtDate(calDate) : ago === 1 ? 'yesterday' : `${ago} days ago`;
+  $('#c-pick').classList.toggle('past', !isToday);
+  $('#c-next').disabled = isToday;
+  $('#c-input').max = t;
+  $('#c-input').value = calDate;
+
+  const goal = goalFor(calDate), list = mealsOn(calDate);
+  const total = list.reduce((sum, m) => sum + m.cal, 0);
+  const stats = calStats();
+  const frac = Math.min(1, total / goal);
+  const bar = h('i');
+  bar.style.transform = `scaleX(${lastFrac.toFixed(4)})`;
+  requestAnimationFrame(() => requestAnimationFrame(() => { bar.style.transform = `scaleX(${frac.toFixed(4)})`; }));
+  lastFrac = frac;
+  const cell = (value, label) => h('div', null, h('b', { text: value }), h('span', { text: label }));
+  fill($('#cal-top'),
+    h('p', { class: 'cal-total' },
+      h('b', { text: fmtNum(total, 0) }),
+      h('span', { class: 'of', text: `of ${fmtNum(goal, 0)} cal` }),
+      total >= goal && h('span', { class: 'mark cal-hit', role: 'img', 'aria-label': 'Goal hit' }, icon('check', 18))),
+    h('div', { class: 'cal-bar', 'aria-hidden': 'true' }, bar),
+    h('div', { class: 'week-grid' },
+      total >= goal ? cell(fmtNum(total - goal, 0), 'over goal') : cell(fmtNum(goal - total, 0), 'to go'),
+      cell(String(stats.run), 'day streak'),
+      cell(String(stats.best), 'best streak')));
+
+  const again = recentMeals(8);
+  fill($('#cal-list'),
+    again.length > 0 && [
+      h('p', { class: 'muted again-label', text: 'Add again' }),
+      h('div', { class: 'recents', role: 'group', 'aria-label': 'Add a recent meal again' }, again.map(m => h('button', {
+        type: 'button', class: 'chip', 'aria-label': `Add ${m.name}, ${m.cal} calories`, onclick: () => quickMeal(m),
+      }, `${m.name} ${fmtNum(m.cal, 0)}`)))],
+    h('h2', { class: 'sub', text: `Eaten ${whenText(calDate)}` }),
+    list.length
+      ? list.map(m => h('button', { type: 'button', class: 'row two', 'aria-label': `Edit ${m.name || 'meal'}, ${m.cal} calories`, onclick: () => mealSheet(m) },
+          h('span', { class: 'row-main' }, h('span', { class: 'row-name', text: m.name || 'Meal' })),
+          h('span', { class: 'row-a', text: `${fmtNum(m.cal, 0)} cal` })))
+      : h('p', { class: 'muted', text: 'Nothing yet. Meals you add show up here.' }),
+    h('button', { type: 'button', class: 'btn btn-block more', onclick: goalSheet }, 'Change goal'));
+}
+
+/* Adding a meal that carries the day's total up to the goal sets off the celebration. */
+function addMeal(meal) {
+  const goal = goalFor(meal.date), before = dayTotal(meal.date);
+  S.meals.push(meal);
+  lastMealAt = Date.now();
+  save(); refresh(); buzz(15); askPersist();
+  toast(`Added ${meal.name || 'meal'}, ${fmtNum(meal.cal, 0)} cal.`, { undo: () => { S.meals = S.meals.filter(m => m.id !== meal.id); save(); refresh(); toast('Removed.'); } });
+  if (goal > 0 && before < goal && before + meal.cal >= goal) celebrate(meal.date);
+}
+function submitMeal(ev) {
+  ev.preventDefault();
+  const nameIn = $('#meal-name'), calIn = $('#meal-cal');
+  if (Date.now() - lastMealAt < 600 && !calIn.value.trim()) return;      // second half of a double tap on a form that just cleared
+  const cal = cleanNum(parseNum(calIn.value), CAL_MAX, true);
+  if (!cal) { fieldError(calIn, 'Enter the calories.'); return; }
+  const meal = { id: uid(), date: calDate, name: cleanText(nameIn.value, 60), cal, at: Date.now() };
+  nameIn.value = '';
+  calIn.value = '';
+  if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
+  addMeal(meal);
+}
+function quickMeal(m) {
+  if (Date.now() - lastMealAt < 600 || Date.now() - wentAt < 400) return;      // ignore an accidental double tap
+  addMeal({ id: uid(), date: calDate, name: m.name, cal: m.cal, at: Date.now() });
+}
+function removeMeal(id) {
+  const i = S.meals.findIndex(m => m.id === id);
+  if (i < 0) return;
+  const [removed] = S.meals.splice(i, 1);
+  save(); refresh();
+  toast(`Deleted ${removed.name || 'meal'}.`, { undo: () => {
+    if (!S.meals.some(m => m.id === removed.id)) S.meals.push(removed);
+    save(); refresh();
+  } });
+}
+function mealSheet(meal) {
+  const n = ++seq;
+  const nameIn = h('input', { id: `meal-name-${n}`, class: 'input', type: 'text', maxlength: '60', autocomplete: 'off', autocapitalize: 'sentences', placeholder: 'Lunch', enterkeyhint: 'done' });
+  const calIn = h('input', { id: `meal-cal-${n}`, class: 'input num-input', type: 'text', inputmode: 'numeric', maxlength: '5', autocomplete: 'off' });
+  nameIn.value = meal.name;
+  calIn.value = String(meal.cal);
+  calIn.addEventListener('input', () => {
+    calIn.value = calIn.value.replace(/\D/g, '');
+    calIn.removeAttribute('aria-invalid');
+    calIn.closest('.field').querySelector('.field-err').textContent = '';
+  });
+  const sheet = openSheet({
+    title: 'Edit meal',
+    onSubmit() {
+      const cal = cleanNum(parseNum(calIn.value), CAL_MAX, true);
+      if (!cal) { fieldError(calIn, 'Enter the calories.'); return; }
+      sheet.close();
+      const current = S.meals.find(m => m.id === meal.id);
+      if (!current) { toast('That meal is no longer in the log.'); return; }
+      const goal = goalFor(current.date), before = dayTotal(current.date);
+      current.name = cleanText(nameIn.value, 60);
+      current.cal = cal;
+      save(); refresh(); toast('Saved changes.');
+      if (goal > 0 && before < goal && dayTotal(current.date) >= goal) celebrate(current.date);
+    },
+    content: [
+      h('div', { class: 'form' }, field('Meal (optional)', nameIn), field('Calories', calIn)),
+      h('div', { class: 'actions' },
+        h('button', { type: 'submit', class: 'btn btn-primary btn-block' }, 'Save changes'),
+        h('button', { type: 'button', class: 'btn btn-danger btn-block', onclick: () => { sheet.close(); removeMeal(meal.id); } }, 'Delete meal')),
+    ],
+  });
+}
+/* Set the daily goal the first time, or change it later. */
+function goalSheet() {
+  const current = goalFor(today());
+  const goalIn = h('input', { id: `goal-${++seq}`, class: 'input num-input', type: 'text', inputmode: 'numeric', maxlength: '5', autocomplete: 'off', placeholder: '0' });
+  goalIn.value = current ? String(current) : '';
+  goalIn.addEventListener('input', () => {
+    goalIn.value = goalIn.value.replace(/\D/g, '');
+    goalIn.removeAttribute('aria-invalid');
+    goalIn.closest('.field').querySelector('.field-err').textContent = '';
+  });
+  const sheet = openSheet({
+    title: current ? 'Change goal' : 'Set goal',
+    onSubmit() {
+      const n = cleanNum(parseNum(goalIn.value), CAL_MAX, true);
+      if (!n) { fieldError(goalIn, 'Enter your calories per day.'); return; }
+      setGoal(n);
+      save(); sheet.close(); refresh();
+      toast(`Goal set to ${fmtNum(n, 0)} calories a day.`);
+    },
+    content: h('div', { class: 'form' },
+      field('Calories per day', goalIn),
+      current > 0 && h('p', { class: 'muted', text: 'The new goal starts today. Earlier days keep the goal they had.' }),
+      h('button', { type: 'submit', class: 'btn btn-primary btn-block' }, 'Save goal')),
+  });
+  setTimeout(() => goalIn.focus(), 300);
+}
+
+/* The celebration. It shows for a few seconds, and a tap closes it sooner. */
+function celebrate(date) {
+  const el = $('#party');
+  const run = calStats().run;
+  clearTimeout(partyTimer);
+  clearTimeout(partyHide);
+  if (partyStop) { partyStop(); partyStop = null; }
+  $('#party-sub').textContent = run > 0 ? `${run} day streak` : fmtDate(date);
+  el.hidden = false;
+  partyAt = Date.now();
+  requestAnimationFrame(() => requestAnimationFrame(() => { if (!el.hidden) el.classList.add('show'); }));
+  buzz([60, 50, 60, 50, 180]);
+  announce(`Goal hit. ${$('#party-sub').textContent}.`);
+  if (!REDUCED_MOTION) partyStop = confetti($('#party-canvas'), 3200);
+  partyTimer = setTimeout(closeParty, REDUCED_MOTION ? 2400 : 3400);
+}
+function closeParty() {
+  clearTimeout(partyTimer);
+  clearTimeout(partyHide);
+  if (partyStop) { partyStop(); partyStop = null; }
+  const el = $('#party');
+  el.classList.remove('show');
+  partyHide = setTimeout(() => { el.hidden = true; }, 260);
+}
+/* Paper bits shot up from the two bottom corners, falling back down. Returns a function that stops it. */
+function confetti(canvas, ms) {
+  const ctx = canvas.getContext ? canvas.getContext('2d') : null;
+  if (!ctx) return () => {};
+  const W = canvas.clientWidth, H = canvas.clientHeight;
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  canvas.width = Math.round(W * dpr);
+  canvas.height = Math.round(H * dpr);
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  const COLORS = ['#ffffff', '#ffb300', '#3987e5', '#35c46a', '#ff6b6b'];
+  const bits = [];
+  for (let i = 0; i < 160; i++) {
+    const fromLeft = i % 2 === 0;
+    const angle = (fromLeft ? -1.05 : -2.09) + (Math.random() - 0.5);       // up and toward the middle
+    const power = 0.9 + Math.random();
+    bits.push({
+      x: fromLeft ? -10 : W + 10, y: H + 10,
+      vx: Math.cos(angle) * W * power * 0.9, vy: Math.sin(angle) * H * power,
+      w: 6 + Math.random() * 6, h: 10 + Math.random() * 8,
+      spin: Math.random() * 6.28, vs: (Math.random() - 0.5) * 10,
+      flip: Math.random() * 6.28, vf: 4 + Math.random() * 8,
+      color: COLORS[i % COLORS.length], delay: Math.random() * 0.4,
+    });
+  }
+  let raf = 0, t0 = 0, last = 0;
+  const frame = now => {
+    if (!t0) { t0 = now; last = now; }
+    const dt = Math.min(0.05, (now - last) / 1000), age = (now - t0) / 1000;
+    last = now;
+    ctx.clearRect(0, 0, W, H);
+    ctx.globalAlpha = Math.max(0, Math.min(1, (ms / 1000 - age) / 0.6));
+    for (const b of bits) {
+      if (age < b.delay) continue;
+      b.vy += H * 1.5 * dt;                       // gravity
+      b.vx -= b.vx * 0.8 * dt;
+      if (b.vy > 0) b.vy -= b.vy * 2.2 * dt;      // paper falls slowly
+      b.x += b.vx * dt;
+      b.y += b.vy * dt;
+      b.spin += b.vs * dt;
+      b.flip += b.vf * dt;
+      ctx.save();
+      ctx.translate(b.x, b.y);
+      ctx.rotate(b.spin);
+      ctx.scale(1, Math.cos(b.flip));
+      ctx.fillStyle = b.color;
+      ctx.fillRect(-b.w / 2, -b.h / 2, b.w, b.h);
+      ctx.restore();
+    }
+    if (age * 1000 < ms) raf = requestAnimationFrame(frame); else ctx.clearRect(0, 0, W, H);
+  };
+  raf = requestAnimationFrame(frame);
+  return () => { cancelAnimationFrame(raf); ctx.clearRect(0, 0, W, H); };
+}
+
 /* ---------- Tabs ---------- */
 function refresh() {
+  if (section === 'home') { renderHome(); return; }
+  if (section === 'schedule') { renderSchedule(); return; }
+  if (section === 'calories') { renderCalories(); return; }
   if (active === 'start') renderStart();
   else if (active === 'log') { drawDate(); renderLogTab(); }
   else if (active === 'routines') renderRoutines();
@@ -2272,6 +2951,7 @@ const Timer = (() => {
     $('#t-bar').style.transform = scale;
     $('#b-bar').style.transform = scale;
     for (const root of [bar, big]) { root.dataset.state = st.status; root.toggleAttribute('data-invert', invert); }
+    bar.toggleAttribute('data-wide', shown >= 600);      // four digits: on a narrow phone the round label makes room
     const key = `${st.status}|${st.round}|${S.settings.repeat}`;
     if (force || key !== lastKey) { lastKey = key; drawControls(); }
   }
@@ -2354,7 +3034,71 @@ const Timer = (() => {
 
 /* ---------- Startup ---------- */
 function init() {
-  /* Tabs */
+  /* Sections: the home button in each one */
+  for (const btn of document.querySelectorAll('[data-home]')) {
+    btn.append(icon('home', 22));
+    btn.addEventListener('click', () => go('home'));
+  }
+  /* Right after the section changes, the second half of a double tap would land on whatever is now under the finger. */
+  document.addEventListener('click', ev => {
+    if (Date.now() - wentAt < 350) { ev.stopPropagation(); ev.preventDefault(); }
+  }, true);
+  const openPicker = input => () => {
+    /* Phones open their date picker on tap. A desktop browser needs to be asked. */
+    if (input.showPicker && matchMedia('(pointer: fine)').matches) { try { input.showPicker(); } catch (err) { /* already open */ } }
+  };
+
+  /* Schedule */
+  $('#m-prev').append(icon('prev'));
+  $('#m-next').append(icon('next'));
+  $('#m-prev').addEventListener('click', () => moveMonth(-1));
+  $('#m-next').addEventListener('click', () => moveMonth(1));
+  const monthInput = $('#m-input');
+  const onMonth = () => { if (parseYmd(monthInput.value)) pickDay(monthInput.value); else monthInput.value = schedSel; };
+  monthInput.addEventListener('change', onMonth);
+  monthInput.addEventListener('input', onMonth);
+  monthInput.addEventListener('click', openPicker(monthInput));
+  $('#ev-add').addEventListener('click', () => eventSheet(null));
+  /* Swipe across the month grid to change month. */
+  let swipe = null;
+  const schedBody = $('#sched-body');
+  schedBody.addEventListener('touchstart', ev => {
+    const p = ev.touches[0];
+    swipe = ev.touches.length === 1 && ev.target.closest && ev.target.closest('.cal-grid') ? { x: p.clientX, y: p.clientY } : null;
+  }, { passive: true });
+  schedBody.addEventListener('touchend', ev => {
+    if (!swipe) return;
+    const p = ev.changedTouches[0], dx = p.clientX - swipe.x, dy = p.clientY - swipe.y;
+    swipe = null;
+    if (Math.abs(dx) < 50 || Math.abs(dx) < Math.abs(dy) * 1.5) return;
+    moveMonth(dx < 0 ? 1 : -1);
+    swipedAt = Date.now();
+  }, { passive: true });
+
+  /* Calories */
+  $('#c-prev').append(icon('prev'));
+  $('#c-next').append(icon('next'));
+  $('#c-prev').addEventListener('click', () => setCalDate(addDays(calDate, -1)));
+  $('#c-next').addEventListener('click', () => setCalDate(addDays(calDate, 1)));
+  const calInput = $('#c-input');
+  const onCalDate = () => setCalDate(calInput.value || today());
+  calInput.addEventListener('change', onCalDate);
+  calInput.addEventListener('input', onCalDate);
+  calInput.addEventListener('click', openPicker(calInput));
+  const mealForm = $('#meal-form');
+  mealForm.addEventListener('submit', submitMeal);
+  mealForm.addEventListener('input', ev => {
+    if (ev.target.id === 'meal-cal') ev.target.value = ev.target.value.replace(/\D/g, '');
+    for (const node of mealForm.querySelectorAll('[aria-invalid]')) node.removeAttribute('aria-invalid');
+    for (const node of mealForm.querySelectorAll('.field-err')) node.textContent = '';
+  });
+  /* Return on the meal name moves on to the calories. */
+  $('#meal-name').addEventListener('keydown', ev => {
+    if (ev.key === 'Enter' && !ev.isComposing) { ev.preventDefault(); $('#meal-cal').focus(); }
+  });
+  $('#party').addEventListener('click', () => { if (Date.now() - partyAt > 600) closeParty(); });
+
+  /* Workout tabs */
   for (const btn of $('#tabs').children) {
     btn.prepend(icon(btn.dataset.tab, 24));
     btn.addEventListener('click', () => show(btn.dataset.tab));
@@ -2400,7 +3144,8 @@ function init() {
   }
 
   Timer.setup();
-  show(session ? 'log' : 'start');      // opens on the Start page, or straight back into a workout in progress
+  go(session ? 'workout' : 'home');     // opens on the home screen, or straight back into a workout in progress
+  wentAt = 0;
   if (!storage.ok) toast('Storage is blocked in this browser, so nothing will be saved.');
 
   /* Escape closes the top sheet or the full-screen timer. */
@@ -2413,12 +3158,23 @@ function init() {
   const rollOver = () => {
     const t = today();
     if (t === dayShown) return;
+    if (schedSel === dayShown) { schedSel = t; schedYM = t.slice(0, 7); }      // the calendar was sitting on today, so it follows
     dayShown = t;
+    if (calAuto) calDate = t;
     if (dateAuto && !session) setLogDate(t, true);        // a workout that runs past midnight stays on the day it started
     refresh();
   };
   const everyMinute = () => { expireSession(); rollOver(); };
-  document.addEventListener('visibilitychange', () => { if (document.hidden) saveDraft(); else everyMinute(); });
+  /* Opened again after a long break: start from the home screen, unless something is in progress. */
+  const AWAY_MS = 30 * 60000;
+  let awayAt = 0;
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) { awayAt = Date.now(); saveDraft(); return; }
+    everyMinute();
+    const busy = !!session || sheets.length > 0 || !$('#bigtimer').hidden || $('#timer').dataset.state !== 'idle'
+      || logForm.dirty() || $('#meal-name').value !== '' || $('#meal-cal').value !== '';
+    if (awayAt && Date.now() - awayAt > AWAY_MS && section !== 'home' && !busy) { go('home'); wentAt = 0; }      // no tap led here, so the next tap counts
+  });
   window.addEventListener('pagehide', saveDraft);
   setInterval(everyMinute, 60000);
   /* Another tab changed the data: load it instead of overwriting it. */
